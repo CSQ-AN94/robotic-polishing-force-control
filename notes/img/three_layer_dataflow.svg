@@ -1,0 +1,65 @@
+<svg viewBox="0 0 860 560" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>三层架构里到底传递了哪些数据</title>
+<desc>详细数据流图：Python 控制脚本从 MuJoCo 引擎读取 qpos/qvel/site_xpos/接触力，算出关节力矩 tau 写回 data.ctrl；引擎读取 XML 模型定义并向控制脚本提供状态。</desc>
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#888" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+<marker id="arUp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#2b7a4b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+<marker id="arDn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#c0392b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<style>
+text { font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1a1a1a; }
+.h { font-size: 16px; font-weight: 600; }
+.s { font-size: 12px; fill: #444; }
+.code { font-family: "Menlo", monospace; font-size: 11.5px; fill: #1a1a1a; }
+.up { stroke: #2b7a4b; stroke-width: 2; }
+.down { stroke: #c0392b; stroke-width: 2; }
+.side { stroke: #888; stroke-width: 1.5; }
+</style>
+
+<!-- XML layer -->
+<rect x="60" y="30" width="740" height="86" rx="8" fill="#eef4fb" stroke="#9db8d6" stroke-width="1"/>
+<text x="80" y="58" class="h">① XML 模型（静态定义，编译成 MjModel）</text>
+<text x="80" y="82" class="code">panda_torque.xml</text>
+<text x="245" y="82" class="s">机械臂本体 + 7 个力矩执行器 + tcp_site + pad_geom</text>
+<text x="80" y="102" class="code">polish_scene.xml</text>
+<text x="245" y="102" class="s">工件 hfield 曲面 + 两个相机 + 光照</text>
+
+<!-- compile arrow -->
+<path d="M430 116 V150" class="side" marker-end="url(#ar)" fill="none"/>
+<text x="440" y="138" class="s">编译一次 → 灌进 MjModel</text>
+
+<!-- MuJoCo engine -->
+<rect x="230" y="152" width="400" height="96" rx="8" fill="#f3f0fa" stroke="#b3a6d6" stroke-width="1"/>
+<text x="430" y="182" class="h" text-anchor="middle">② MuJoCo 物理引擎</text>
+<text x="430" y="206" class="s" text-anchor="middle">正向动力学 + 接触求解</text>
+<text x="430" y="228" class="s" text-anchor="middle">每调用一次 mj_step() 世界前进 2 毫秒</text>
+
+<!-- Python controller -->
+<rect x="230" y="440" width="400" height="90" rx="8" fill="#eef7f1" stroke="#8fc4a3" stroke-width="1"/>
+<text x="430" y="470" class="h" text-anchor="middle">③ polish_impedance_control.py</text>
+<text x="430" y="494" class="s" text-anchor="middle">阻抗控制 + 显式力控 + 感知</text>
+<text x="430" y="516" class="s" text-anchor="middle">唯一"知道任务是什么"的一层</text>
+
+<!-- UP arrow: engine -> controller (state) -->
+<path d="M340 440 V248" class="up" marker-end="url(#arUp)" fill="none"/>
+<text x="150" y="320" class="s" fill="#2b7a4b">引擎 → 控制器（读状态）</text>
+<text x="150" y="342" class="code" fill="#2b7a4b">data.qpos / data.qvel</text>
+<text x="150" y="360" class="code" fill="#2b7a4b">data.site_xpos[tcp]</text>
+<text x="150" y="378" class="code" fill="#2b7a4b">data.contact（接触力）</text>
+<text x="150" y="396" class="code" fill="#2b7a4b">data.qfrc_bias（重力项）</text>
+
+<!-- DOWN arrow: controller -> engine (torque) -->
+<path d="M520 248 V440" class="down" marker-end="url(#arDn)" fill="none"/>
+<text x="545" y="330" class="s" fill="#c0392b">控制器 → 引擎（下指令）</text>
+<text x="545" y="352" class="code" fill="#c0392b">data.ctrl[关节] = tau</text>
+<text x="545" y="372" class="s" fill="#c0392b">tau = Jᵀ·F + 重力前馈</text>
+
+<!-- loop note -->
+<text x="430" y="554" class="s" text-anchor="middle" fill="#666">这一上一下构成闭环，一次仿真重复几千到上万次</text>
+</svg>

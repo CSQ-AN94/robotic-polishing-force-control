@@ -1,0 +1,51 @@
+<svg viewBox="0 0 720 470" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>打磨仿真系统架构</title>
+<desc>展示 XML 模型文件、MuJoCo 物理引擎、Python 控制脚本三者的关系与数据流向：模型定义世界，引擎计算物理，控制脚本读取状态并下达力矩指令，形成闭环。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<style>
+text { font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1a1a1a; }
+.th { font-size: 14px; font-weight: 500; }
+.ts { font-size: 12px; fill: #555; }
+.box { fill: #fafafa; stroke: #999; stroke-width: 0.75; }
+.arr { stroke: #666; stroke-width: 1.5; }
+</style>
+
+<rect x="40" y="36" width="640" height="112" rx="8" fill="none" stroke="#999" stroke-width="0.5" stroke-dasharray="4 3"/>
+<text x="52" y="28" class="ts">XML 模型文件（定义世界长什么样）</text>
+
+<g>
+<rect x="70" y="64" width="280" height="64" rx="4" class="box"/>
+<text x="210" y="86" text-anchor="middle" class="th">panda_torque.xml</text>
+<text x="210" y="108" text-anchor="middle" class="ts">机械臂本体 + 力矩执行器</text>
+</g>
+
+<g>
+<rect x="370" y="64" width="280" height="64" rx="4" class="box"/>
+<text x="510" y="86" text-anchor="middle" class="th">polish_scene.xml</text>
+<text x="510" y="108" text-anchor="middle" class="ts">打磨工件 + 引用机械臂</text>
+</g>
+
+<path d="M360 158 V230" class="arr" marker-end="url(#arrow)" fill="none"/>
+
+<g>
+<rect x="190" y="240" width="340" height="70" rx="4" class="box"/>
+<text x="360" y="266" text-anchor="middle" class="th">MuJoCo 物理引擎</text>
+<text x="360" y="288" text-anchor="middle" class="ts">计算动力学与接触力</text>
+</g>
+
+<g>
+<rect x="190" y="380" width="340" height="70" rx="4" class="box"/>
+<text x="360" y="406" text-anchor="middle" class="th">polish_impedance_control.py</text>
+<text x="360" y="428" text-anchor="middle" class="ts">阻抗 + 显式力控制器</text>
+</g>
+
+<path d="M260 320 V370" class="arr" marker-end="url(#arrow)" fill="none"/>
+<path d="M460 370 V320" class="arr" marker-end="url(#arrow)" fill="none"/>
+
+<text x="178" y="349" text-anchor="end" class="ts">状态 / 接触力</text>
+<text x="542" y="349" text-anchor="start" class="ts">力矩 τ</text>
+</svg>

@@ -1,0 +1,39 @@
+# --- macOS / editor / tooling noise ---
+.DS_Store
+**/.DS_Store
+.idea/
+.claude/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# --- Python environments (never versioned) ---
+.venv/
+.pip-cache/
+scripts/mujoco/mujoco_polishing_sim/.viewer_venv/
+
+# --- Large / ephemeral local files not needed in the repo ---
+scripts/mujoco/mujoco_polishing_sim/*.mov
+scripts/mujoco/mujoco_polishing_sim/MUJOCO_LOG.TXT
+
+# --- Historical Franka Panda mesh assets: kept locally only.        ---
+# --- Source/license for these specific mesh files is not recorded   ---
+# --- locally, so they are excluded from the public repo. The        ---
+# --- historical panda_torque.xml itself (text, no license concern)  ---
+# --- is still tracked -- see README for how to restore visuals if   ---
+# --- you have your own copy of the Franka description assets.       ---
+scripts/mujoco/mujoco_polishing_sim/assets/*.stl
+scripts/mujoco/mujoco_polishing_sim/assets/*.obj
+
+# --- Everything else in this local workspace is out of scope for    ---
+# --- this repo (unrelated experiments/notes, not the polishing      ---
+# --- project or its textbook) and is intentionally not tracked here.---
+data/
+papers/
+third_party/
+visualizers/
+scripts/fundamentals/
+scripts/robosuite/
+artifacts/pdf_ocr/
+artifacts/python_cache/
+files.zip

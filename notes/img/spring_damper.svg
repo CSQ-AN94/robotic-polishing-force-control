@@ -1,0 +1,63 @@
+<svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>阻抗控制的弹簧-阻尼类比</title>
+<desc>示意图：机械臂末端被想象成一个通过弹簧和阻尼器连到目标位置的滑块，弹簧力正比于位置误差，阻尼力正比于速度且方向相反。</desc>
+<style>
+text { font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1a1a1a; }
+.h { font-size: 15px; font-weight: 600; }
+.s { font-size: 12.5px; fill: #444; }
+.code { font-family: "Menlo", monospace; font-size: 12px; }
+</style>
+
+<!-- ground / wall (anchor = target position x_d) -->
+<line x1="90" y1="60" x2="90" y2="250" stroke="#333" stroke-width="3"/>
+<g stroke="#333" stroke-width="1.2">
+<line x1="90" y1="70" x2="76" y2="84"/>
+<line x1="90" y1="100" x2="76" y2="114"/>
+<line x1="90" y1="130" x2="76" y2="144"/>
+<line x1="90" y1="160" x2="76" y2="174"/>
+<line x1="90" y1="190" x2="76" y2="204"/>
+<line x1="90" y1="220" x2="76" y2="234"/>
+</g>
+<line x1="90" y1="255" x2="90" y2="285" stroke="#c0392b" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="90" y="305" class="s" text-anchor="middle" fill="#c0392b">目标位置 x_d</text>
+
+<!-- spring (top path) -->
+<polyline points="90,120 130,120 145,105 165,135 185,105 205,135 225,105 245,135 260,120 300,120"
+  fill="none" stroke="#2b7a4b" stroke-width="2"/>
+<text x="195" y="92" class="s" text-anchor="middle" fill="#2b7a4b">弹簧 刚度 Kp</text>
+
+<!-- damper (bottom path): cylinder + piston -->
+<line x1="90" y1="190" x2="150" y2="190" stroke="#2b6cb0" stroke-width="2"/>
+<rect x="150" y="172" width="60" height="36" fill="none" stroke="#2b6cb0" stroke-width="2"/>
+<line x1="200" y1="177" x2="200" y2="203" stroke="#2b6cb0" stroke-width="4"/>
+<line x1="200" y1="190" x2="300" y2="190" stroke="#2b6cb0" stroke-width="2"/>
+<text x="180" y="232" class="s" text-anchor="middle" fill="#2b6cb0">阻尼器 系数 Kd</text>
+
+<!-- moving block (end-effector current position x) -->
+<rect x="300" y="95" width="80" height="120" rx="4" fill="#f0ead6" stroke="#b8860b" stroke-width="2"/>
+<text x="340" y="150" class="h" text-anchor="middle">末端</text>
+<text x="340" y="172" class="s" text-anchor="middle">当前 x</text>
+<line x1="340" y1="215" x2="340" y2="285" stroke="#333" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="340" y="305" class="s" text-anchor="middle">当前位置 x</text>
+
+<!-- error bracket -->
+<line x1="90" y1="270" x2="340" y2="270" stroke="#666" stroke-width="1"/>
+<text x="215" y="264" class="s" text-anchor="middle" fill="#666">位置误差 (x_d − x)</text>
+
+<!-- velocity arrow on block -->
+<line x1="380" y1="130" x2="450" y2="130" stroke="#b8860b" stroke-width="2" marker-end="url(#arv)"/>
+<text x="415" y="120" class="s" text-anchor="middle" fill="#b8860b">速度 ẋ</text>
+<defs>
+<marker id="arv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#b8860b" stroke-width="1.6" stroke-linecap="round"/>
+</marker>
+</defs>
+
+<!-- formula box -->
+<rect x="470" y="90" width="230" height="150" rx="8" fill="#f7f7f7" stroke="#ccc"/>
+<text x="585" y="120" class="h" text-anchor="middle">合力</text>
+<text x="585" y="152" class="code" text-anchor="middle">F = Kp·(x_d − x)</text>
+<text x="605" y="178" class="code" text-anchor="middle">− Kd·ẋ</text>
+<text x="585" y="210" class="s" text-anchor="middle">弹簧把它往目标拉，</text>
+<text x="585" y="228" class="s" text-anchor="middle">阻尼按速度反向刹车</text>
+</svg>

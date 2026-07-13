@@ -1,0 +1,111 @@
+<mujoco model="RM65-B pneumatic polishing cell">
+  <include file="rm65b_pneumatic.xml"/>
+
+  <statistic center="0.5 0 0.4" extent="1"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <material name="workpiece_mat" rgba="0.55 0.55 0.6 1"/>
+    <!-- Official Orbbec ROS2 description mesh for the shared Gemini 335L/336L
+         enclosure.  Native STL units are metres: 124 x 29 x 27 mm. -->
+    <mesh name="orbbec_gemini_336l_mesh"
+          file="../orbbec/gemini335L_336L_base_link.STL"/>
+    <!-- Height data is filled in procedurally at runtime (see fill_workpiece_hfield()
+         in polish_impedance_control.py): flat, then a true circular arc (radius
+         ARC_RADIUS in the Python file) tangent to the flat plane -- zero slope at
+         the seam, so no crease -- rising all the way to the workpiece edge. size =
+         "x_half y_half elevation_z base_z" -- elevation_z is the max added height
+         (must match ARC_ELEVATION in the Python file), base_z is the solid
+         thickness below the lowest point. -->
+    <hfield name="workpiece_hf" nrow="4" ncol="200" size="0.18 0.18 0.04 0.05"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- Optional repeatable inspection cameras.  The GUI now starts in a free,
+         mouse-adjustable view; pass --camera=cell_view or --camera=tool_view to
+         lock the launch view to one of these presets. -->
+    <camera name="cell_view" mode="targetbody" target="workpiece" pos="1.05 -0.95 0.82"/>
+    <camera name="tool_view" mode="targetbody" target="pneumatic_slide" pos="0.85 -0.62 0.58"/>
+    <camera name="camera_view" mode="targetbody" target="orbbec_gemini_336l_mount"
+            pos="0.72 -0.32 0.76"/>
+
+    <!-- Downward-looking depth/point-cloud scan camera, used once at startup (see
+         capture_point_cloud() + fit_normals_along_x() in polish_impedance_control.py)
+         to perceive the workpiece surface instead of hard-coding ARC_RADIUS knowledge
+         into the controller. Default orientation (no quat) already looks straight
+         down -world_z. Positioned high enough that the default 45 deg fovy comfortably
+         covers the original 0.36x0.36m workpiece from directly overhead. -->
+    <!-- Fixed eye-to-hand Orbbec Gemini 336L surrogate.  The 640x480@30 Hz
+         stream and calibrated pinhole intrinsics are represented in Python;
+         this fixed pose is the camera-to-base extrinsic used in simulation. -->
+    <!-- Camera mast and crossbar make the fixed eye-to-hand installation
+         physically legible instead of leaving a camera floating in space. -->
+    <geom name="camera_mast" type="cylinder" size="0.022 0.48" pos="0.84 0.30 0.48"
+          rgba="0.18 0.20 0.23 1" contype="1" conaffinity="1"/>
+    <geom name="camera_crossbar" type="capsule" fromto="0.84 0.30 0.94 0.50 0 0.94"
+          size="0.018" rgba="0.18 0.20 0.23 1" contype="1" conaffinity="1"/>
+    <body name="orbbec_gemini_336l_mount" pos="0.5 0 0.94">
+      <!-- The official mesh axes are depth/width/height = x/y/z.  This cyclic
+           rotation maps them to world z/x/y so the optical face looks down.
+           The position recentres the STL bounding box at this mount body. -->
+      <geom name="orbbec_gemini_336l_visual" type="mesh"
+            mesh="orbbec_gemini_336l_mesh"
+            pos="0 -0.0143067 -0.002295"
+            quat="-0.5 0.5 0.5 0.5"
+            rgba="0.10 0.11 0.12 1" contype="0" conaffinity="0"/>
+      <!-- Lens-face accents use the optical-frame spacings from Orbbec's URDF:
+           the two IR cameras are 95 mm apart and RGB is 23.75 mm from the left. -->
+      <geom type="cylinder" size="0.006 0.0015" pos="0.0475 0 -0.0145"
+            rgba="0.03 0.05 0.07 1" contype="0" conaffinity="0"/>
+      <geom type="cylinder" size="0.006 0.0015" pos="-0.0475 0 -0.0145"
+            rgba="0.03 0.05 0.07 1" contype="0" conaffinity="0"/>
+      <geom type="cylinder" size="0.005 0.0015" pos="0.02375 0 -0.0145"
+            rgba="0.04 0.07 0.10 1" contype="0" conaffinity="0"/>
+      <!-- Depth optical origin follows the left-IR frame used by the official
+           description rather than the centre of the enclosure. -->
+      <camera name="scan_cam" pos="0.0475 0 -0.016" fovy="55"/>
+    </body>
+
+    <!-- Worktable: the hfield's 5 cm solid base rests on the 25 cm-high top. -->
+    <!-- Split front pieces are retained from the earlier workcell layout; the
+         active RM65 pedestal now occupies the dedicated right-edge slot. -->
+    <!-- The back slab ends at x=0.72, leaving a 10 mm-clear right-edge slot for
+         the RM65 pedestal column at x=0.78. -->
+    <geom name="worktable_back" type="box" pos="0.47 0.05 0.225" size="0.25 0.23 0.025"
+          rgba="0.28 0.31 0.34 1" contype="1" conaffinity="1" friction="0.8 0.01 0.0001"/>
+    <geom name="worktable_front_left" type="box" pos="0.325 -0.23 0.225" size="0.105 0.05 0.025"
+          rgba="0.28 0.31 0.34 1" contype="1" conaffinity="1" friction="0.8 0.01 0.0001"/>
+    <geom name="worktable_front_right" type="box" pos="0.685 -0.23 0.225" size="0.095 0.05 0.025"
+          rgba="0.28 0.31 0.34 1" contype="1" conaffinity="1" friction="0.8 0.01 0.0001"/>
+    <geom name="table_leg_1" type="box" pos="0.28 -0.20 0.10" size="0.025 0.025 0.10"
+          rgba="0.18 0.20 0.22 1" contype="1" conaffinity="1"/>
+    <geom name="table_leg_2" type="box" pos="0.72 -0.20 0.10" size="0.025 0.025 0.10"
+          rgba="0.18 0.20 0.22 1" contype="1" conaffinity="1"/>
+    <geom name="table_leg_3" type="box" pos="0.28 0.20 0.10" size="0.025 0.025 0.10"
+          rgba="0.18 0.20 0.22 1" contype="1" conaffinity="1"/>
+    <geom name="table_leg_4" type="box" pos="0.72 0.20 0.10" size="0.025 0.025 0.10"
+          rgba="0.18 0.20 0.22 1" contype="1" conaffinity="1"/>
+    <geom name="robot_pedestal" type="box" pos="0.78 0 0.15" size="0.05 0.05 0.15"
+          rgba="0.22 0.25 0.28 1" contype="1" conaffinity="1"/>
+
+    <!-- Original 0.36x0.36m workpiece: flat for x<=0.50 and circular arc for
+         x>0.50. The 13-row RM65-B raster covers the complete footprint; the
+         part geometry itself is unchanged from the Franka version. -->
+    <body name="workpiece">
+      <geom name="workpiece_curved" type="hfield" hfield="workpiece_hf" pos="0.5 0 0.30"
+            material="workpiece_mat" contype="3" conaffinity="3" friction="0.8 0.01 0.0001"/>
+    </body>
+  </worldbody>
+</mujoco>
