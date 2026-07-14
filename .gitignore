@@ -37,3 +37,7 @@ scripts/robosuite/
 artifacts/pdf_ocr/
 artifacts/python_cache/
 files.zip
+
+# --- Personal notes stay local. Only the public textbook is versioned. ---
+notes/*
+!notes/mujoco_polishing_textbook.md

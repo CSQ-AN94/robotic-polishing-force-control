@@ -1,65 +1,148 @@
 # Robotic Polishing Force Control
 
-MuJoCo 仿真：睿尔曼 RM65-B 六轴机械臂 + 固定式 Orbbec Gemini 336L 深度相机 + 气动柔顺打磨头，打磨一块半平面、半真圆弧的工件。核心是一套感知驱动的混合阻抗/显式力控制器——用深度相机点云实时拟合工件表面的局部法线，让力控制沿真实法线方向、运动跟踪沿真实切平面方向，而不是假设工件是水平的；外层再套一套三层的力安全机制（命令限幅、双通道快滤波监控、撤离并锁定状态机）。
+基于 MuJoCo 的机器人恒力打磨仿真：睿尔曼 RM65-B 六轴机械臂搭载气动柔顺打磨头，由固定式 Orbbec Gemini 336L 深度相机估计工件局部表面法线，在平面—圆弧连续工件上执行全覆盖光栅扫描和法向力控制。
 
-配套一份非常详细的教材，从 Python/NumPy 语法基础一路讲到控制理论推导、代码实现、真实调参案例和安全机制设计依据。
+这个仓库不仅包含一段控制脚本，还包含完整的机器人、工具、相机与工件模型，控制与感知实现，仿真结果，以及从基础概念到参数调试的配套教材。
 
-## 目录结构
+![RM65-B robotic polishing simulation](artifacts/rm65_full_coverage_orbbec_final.jpeg)
 
-```text
-notes/
-  mujoco_polishing_textbook.md   完整教材（先读这个）
-  组会汇报准备.md                 原理+实现的答辩准备材料，含控制框图
-  session_handoff_perception_safety.md   开发过程的交接记录
-  力控打磨输出图/                 若干代表性结果图（不同噪声水平下的表现）
-  img/                           教材配图（含控制框图 SVG）
+## 项目包含什么
 
-scripts/mujoco/mujoco_polishing_sim/
-  polish_impedance_control.py    主控制脚本
-  polish_scene.xml               场景（工件、相机、工作台）
-  rm65b_pneumatic.xml            RM65-B + 气动打磨头模型
-  panda_torque.xml               历史对照模型（早期 Franka Panda 原型，仅文本，网格未包含）
-  assets/rm65/, assets/orbbec/   RM65-B 与 Gemini 336L 官方外观网格（各自附 LICENSE）
-  README_polish.md               这个子项目自己的运行说明
+- **机器人本体**：RM65-B 六轴机械臂的运动学、惯量、关节限制、执行器与官方外观网格。
+- **柔顺末端**：带轴向滑动、弹簧阻尼、气动预载和柔性背衬等效模型的打磨头。
+- **工件与轨迹**：左半平面、右半真圆弧的连续曲面，以及覆盖整个工件的 13 行往复式光栅轨迹。
+- **感知模块**：从仿真深度相机生成点云，分箱拟合局部法线，并构造随曲面变化的表面坐标系。
+- **混合控制器**：切平面内使用任务空间阻抗控制跟踪轨迹，法线方向使用显式 PI 力控制维持目标接触力。
+- **安全机制**：命令限幅、独立快速力监控、持续过力判定、主动撤离和故障锁定。
+- **结果与教材**：参考仿真曲线，以及一份解释控制理论、代码实现与参数调试的完整 Markdown 教材。
+
+## 系统主线
+
+```mermaid
+flowchart LR
+    Camera["Gemini 336L depth camera"] --> Cloud["Point cloud"]
+    Cloud --> Normal["Local surface normal"]
+    Path["Full-coverage raster path"] --> Tangent["Tangential impedance control"]
+    Normal --> Frame["Surface-frame decomposition"]
+    Frame --> Tangent
+    Contact["Measured contact force"] --> Force["Normal PI force control"]
+    Frame --> Force
+    Tangent --> Wrench["Task-space wrench"]
+    Force --> Wrench
+    Wrench --> Torque["Jacobian transpose + bias compensation"]
+    Torque --> Robot["RM65-B + compliant sanding head"]
+    Robot --> Contact
+    Contact --> Safety["Fast safety monitor"]
+    Safety -->|"sustained over-force"| Retreat["Retreat and latch"]
 ```
 
-## 怎么跑起来
+控制器把任务分解到局部表面坐标系：沿法线 \(\mathbf{n}\) 调节接触力 \(f_n\)，在与 \(\mathbf{n}\) 正交的切平面内跟踪光栅轨迹。这样经过圆弧区域时，位置控制与力控制仍保持正交，不会在同一方向互相对抗。
 
-无头模式（不弹窗口，跑完生成 `polish_result.png`）：
+## 仓库结构
+
+```text
+robotic-polishing-force-control/
+├── README.md
+├── artifacts/
+│   ├── rm65_full_coverage_orbbec_final.jpeg
+│   └── rm65_short_pneumatic_head_65mm.jpeg
+├── notes/
+│   └── mujoco_polishing_textbook.md       # 完整中文教材
+└── scripts/mujoco/mujoco_polishing_sim/
+    ├── polish_impedance_control.py        # 仿真与控制主入口
+    ├── polish_scene.xml                   # 工作站、相机与工件场景
+    ├── rm65b_pneumatic.xml                # RM65-B 与气动打磨头模型
+    ├── panda_torque.xml                   # 早期 Franka Panda 对照模型
+    ├── README_polish.md                   # 子项目运行说明
+    ├── polish_result.png                  # 当前仿真输出
+    ├── polish_result_reference.png        # 参考输出
+    └── assets/
+        ├── rm65/                          # RM65-B 网格与许可证
+        └── orbbec/                        # Gemini 336L 网格与来源说明
+```
+
+### 核心文件职责
+
+| 文件 | 作用 |
+| --- | --- |
+| `polish_impedance_control.py` | 生成曲面、模拟点云、估计法线、生成光栅轨迹、执行混合力/位控制、安全监控并绘制结果。 |
+| `polish_scene.xml` | 组合机器人模型，定义工作台、平面—圆弧工件、固定相机、灯光和观察视角。 |
+| `rm65b_pneumatic.xml` | 定义 RM65-B 刚体链、关节、执行器，以及气动柔顺打磨头。 |
+| `mujoco_polishing_textbook.md` | 从 Python/NumPy、阻抗控制和雅可比矩阵开始，解释完整实现与调参依据。 |
+| `README_polish.md` | 记录 MuJoCo 子项目的依赖、无头运行、macOS GUI 和相机视角用法。 |
+
+## 快速开始
+
+### 1. 获取代码并创建环境
 
 ```bash
-cd scripts/mujoco/mujoco_polishing_sim
-python -m venv .venv && source .venv/bin/activate
-pip install mujoco numpy matplotlib
+git clone git@github.com:CSQ-AN94/robotic-polishing-force-control.git
+cd robotic-polishing-force-control/scripts/mujoco/mujoco_polishing_sim
+
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install mujoco numpy matplotlib
+```
+
+### 2. 无头运行
+
+```bash
 python polish_impedance_control.py
 ```
 
-GUI 模式（macOS 需要用 `mjpython`，见 [scripts/mujoco/mujoco_polishing_sim/README_polish.md](scripts/mujoco/mujoco_polishing_sim/README_polish.md) 里的详细说明）：
+仿真结束后会在当前目录生成或更新 `polish_result.png`，其中包含轨迹、法向力、滤波信号、安全阈值和逐行误差等结果。
+
+### 3. GUI 运行
 
 ```bash
 mjpython polish_impedance_control.py --view
 ```
 
-## 从哪里开始读
+可用 `--camera` 选择预定义视角：
 
-先看 [notes/mujoco_polishing_textbook.md](notes/mujoco_polishing_textbook.md) 的"读者假设与范围"和"大地图"部分建立整体印象，再逐章往下读；如果只是想快速看懂控制架构，可以直接跳到教材里"控制系统的大闭环"那一节的框图。
-
-## 关于历史 Franka Panda 资源
-
-`panda_torque.xml` 保留作历史对照（教材附录里有说明它和现在 RM65-B 版本的区别），但它引用的网格文件（`.stl`/`.obj`）因为来源和授权不明确，没有包含在这个仓库里，所以这个历史文件目前只能读文本、不能直接可视化加载。如果你有自己的 Franka Panda 描述文件（比如来自官方或 MuJoCo Menagerie），把对应网格放进 `assets/` 目录同名位置即可恢复可视化。
-
----
-
-## 本地工作区其它入口（仅供参考，未包含在本仓库范围内）
-
-这个仓库是从一个更大的本地学习工作区里挑出来的一部分。工作区里还有下面这些跟本仓库无关的内容，仅记录在这里方便本地查阅，不随本仓库发布：
-
-```text
-papers/                 论文 PDF
-scripts/fundamentals/   基础阻抗 / 质量-弹簧-阻尼小实验
-scripts/robosuite/      robosuite / OSC_POSE 探针和 GUI 脚本
-visualizers/            HTML/CSS/JS 可视化页面
-data/                   仿真日志、JSON 数据等可复用数据
-artifacts/              OCR 页面图、处理产物等中间文件
-third_party/            外部或阶段性移植代码
+```bash
+mjpython polish_impedance_control.py --view --camera=cell_view
+mjpython polish_impedance_control.py --view --camera=tool_view
+mjpython polish_impedance_control.py --view --camera=camera_view
 ```
+
+macOS 的 `mjpython` 环境和带空格路径注意事项见 [`README_polish.md`](scripts/mujoco/mujoco_polishing_sim/README_polish.md)。GUI 会循环播放仿真，关闭窗口后停止。
+
+## 控制流程
+
+1. **接近阶段**：末端在位置与姿态方向均使用任务空间阻抗控制，平滑下降到工件表面。
+2. **接触过渡**：目标法向力通过 smoothstep 从 \(0\,\mathrm{N}\) 平滑增加到 \(8\,\mathrm{N}\)，降低首次接触冲击。
+3. **打磨阶段**：
+   - 点云模块估计当前位置的局部法线；
+   - 切向阻抗控制跟踪全覆盖光栅轨迹；
+   - 法向 PI 力控制调节接触力；
+   - 重力、科氏力和离心力通过 MuJoCo 的 `qfrc_bias` 前馈补偿。
+4. **安全阶段**：快速滤波通道独立监测法向力与合力；持续过力时立即撤离，释放接触后进入锁定状态，本轮不自动恢复打磨。
+
+主要可调参数集中在 `polish_impedance_control.py` 顶部，包括：
+
+- 切向刚度与阻尼：`KP_POS_XY`、`KD_POS_XY`
+- 法向力环：`F_TARGET`、`KP_F`、`KI_F`、`BZ`
+- 安全阈值：`F_RETREAT_TRIGGER`、`F_RESULTANT_TRIGGER`
+- 光栅覆盖：`RASTER_X_MIN/MAX`、`RASTER_Y_MIN/MAX`、`RASTER_ROWS`
+
+## 输出示例
+
+![Polishing simulation result](scripts/mujoco/mujoco_polishing_sim/polish_result_reference.png)
+
+运行脚本后可将新生成的 `polish_result.png` 与仓库中的 `polish_result_reference.png` 对照，检查轨迹覆盖、法向力跟踪、快速/慢速滤波信号和安全状态。
+
+## 推荐阅读顺序
+
+1. 先读本 README，建立系统和目录的整体认识。
+2. 阅读 [`README_polish.md`](scripts/mujoco/mujoco_polishing_sim/README_polish.md)，跑通最小仿真。
+3. 阅读 [`mujoco_polishing_textbook.md`](notes/mujoco_polishing_textbook.md) 的“读者假设与范围”和“大地图”。
+4. 对照 [`polish_impedance_control.py`](scripts/mujoco/mujoco_polishing_sim/polish_impedance_control.py)，依次跟踪轨迹生成、点云法线估计、混合控制和安全状态机。
+
+## 模型来源与限制
+
+- RM65-B 网格来自睿尔曼官方 `RealManRobot/rm_robot`，授权信息见 [`assets/rm65/LICENSE`](scripts/mujoco/mujoco_polishing_sim/assets/rm65/LICENSE)。
+- Gemini 336L 资源的来源与许可说明见 [`assets/orbbec/SOURCE.md`](scripts/mujoco/mujoco_polishing_sim/assets/orbbec/SOURCE.md) 和 [`assets/orbbec/LICENSE`](scripts/mujoco/mujoco_polishing_sim/assets/orbbec/LICENSE)。
+- `panda_torque.xml` 是早期 Franka Panda 原型，仅用于对照；其外部网格未包含在仓库中，因此不能直接加载为完整可视化模型。
+- 当前 Gemini 336L 是仿真相机。迁移到真实系统时，需要替换为设备内参、eye-to-hand 标定外参和真实传感器数据管线。
