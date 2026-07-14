@@ -20,7 +20,7 @@
 
 ![RM65-B hybrid force-control closed loop](notes/img/hybrid_control_closed_loop.svg)
 
-控制器把任务分解到局部表面坐标系：沿法线 \(\mathbf{n}\) 调节接触力 \(f_n\)，在与 \(\mathbf{n}\) 正交的切平面内跟踪光栅轨迹。这样经过圆弧区域时，位置控制与力控制仍保持正交，不会在同一方向互相对抗。
+控制器把任务分解到局部表面坐标系：沿局部法线 `n` 调节接触力 `f_n`，在与法线正交的切平面内跟踪光栅轨迹。这样经过圆弧区域时，位置控制与力控制仍保持正交，不会在同一方向互相对抗。
 
 ## 仓库结构
 
@@ -31,7 +31,7 @@ robotic-polishing-force-control/
 │   ├── rm65_full_coverage_orbbec_final.jpeg
 │   └── rm65_short_pneumatic_head_65mm.jpeg
 ├── notes/
-│   ├── mujoco_polishing_textbook.md       # 完整中文教材
+│   ├── mujoco_polishing_textbook_github.md # GitHub 数学渲染版教材
 │   └── img/                               # 教材引用的控制图与分析图
 └── scripts/mujoco/mujoco_polishing_sim/
     ├── polish_impedance_control.py        # 仿真与控制主入口
@@ -53,7 +53,7 @@ robotic-polishing-force-control/
 | `polish_impedance_control.py` | 生成曲面、模拟点云、估计法线、生成光栅轨迹、执行混合力/位控制、安全监控并绘制结果。 |
 | `polish_scene.xml` | 组合机器人模型，定义工作台、平面—圆弧工件、固定相机、灯光和观察视角。 |
 | `rm65b_pneumatic.xml` | 定义 RM65-B 刚体链、关节、执行器，以及气动柔顺打磨头。 |
-| `mujoco_polishing_textbook.md` | 从 Python/NumPy、阻抗控制和雅可比矩阵开始，解释完整实现与调参依据。 |
+| [`mujoco_polishing_textbook_github.md`](notes/mujoco_polishing_textbook_github.md) | 从 Python/NumPy、阻抗控制和雅可比矩阵开始，解释完整实现与调参依据。 |
 | `README_polish.md` | 记录 MuJoCo 子项目的依赖、无头运行、macOS GUI 和相机视角用法。 |
 
 ## 快速开始
@@ -97,7 +97,7 @@ macOS 的 `mjpython` 环境和带空格路径注意事项见 [`README_polish.md`
 ## 控制流程
 
 1. **接近阶段**：末端在位置与姿态方向均使用任务空间阻抗控制，平滑下降到工件表面。
-2. **接触过渡**：目标法向力通过 smoothstep 从 \(0\,\mathrm{N}\) 平滑增加到 \(8\,\mathrm{N}\)，降低首次接触冲击。
+2. **接触过渡**：目标法向力通过 smoothstep 从 0 N 平滑增加到 8 N，降低首次接触冲击。
 3. **打磨阶段**：
    - 点云模块估计当前位置的局部法线；
    - 切向阻抗控制跟踪全覆盖光栅轨迹；

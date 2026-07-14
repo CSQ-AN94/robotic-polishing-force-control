@@ -40,7 +40,7 @@ files.zip
 
 # --- Personal notes stay local. Only the public textbook is versioned. ---
 notes/*
-!notes/mujoco_polishing_textbook.md
+!notes/mujoco_polishing_textbook_github.md
 !notes/img/
 notes/img/*
 !notes/img/hybrid_control_closed_loop.svg
