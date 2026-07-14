@@ -18,23 +18,7 @@
 
 ## 系统主线
 
-```mermaid
-flowchart LR
-    Camera["Gemini 336L depth camera"] --> Cloud["Point cloud"]
-    Cloud --> Normal["Local surface normal"]
-    Path["Full-coverage raster path"] --> Tangent["Tangential impedance control"]
-    Normal --> Frame["Surface-frame decomposition"]
-    Frame --> Tangent
-    Contact["Measured contact force"] --> Force["Normal PI force control"]
-    Frame --> Force
-    Tangent --> Wrench["Task-space wrench"]
-    Force --> Wrench
-    Wrench --> Torque["Jacobian transpose + bias compensation"]
-    Torque --> Robot["RM65-B + compliant sanding head"]
-    Robot --> Contact
-    Contact --> Safety["Fast safety monitor"]
-    Safety -->|"sustained over-force"| Retreat["Retreat and latch"]
-```
+![RM65-B hybrid force-control closed loop](notes/img/hybrid_control_closed_loop.svg)
 
 控制器把任务分解到局部表面坐标系：沿法线 \(\mathbf{n}\) 调节接触力 \(f_n\)，在与 \(\mathbf{n}\) 正交的切平面内跟踪光栅轨迹。这样经过圆弧区域时，位置控制与力控制仍保持正交，不会在同一方向互相对抗。
 
@@ -47,7 +31,8 @@ robotic-polishing-force-control/
 │   ├── rm65_full_coverage_orbbec_final.jpeg
 │   └── rm65_short_pneumatic_head_65mm.jpeg
 ├── notes/
-│   └── mujoco_polishing_textbook.md       # 完整中文教材
+│   ├── mujoco_polishing_textbook.md       # 完整中文教材
+│   └── img/                               # 教材引用的控制图与分析图
 └── scripts/mujoco/mujoco_polishing_sim/
     ├── polish_impedance_control.py        # 仿真与控制主入口
     ├── polish_scene.xml                   # 工作站、相机与工件场景
@@ -129,16 +114,9 @@ macOS 的 `mjpython` 环境和带空格路径注意事项见 [`README_polish.md`
 
 ## 输出示例
 
-![Polishing simulation result](scripts/mujoco/mujoco_polishing_sim/polish_result_reference.png)
+![Latest polishing simulation output](scripts/mujoco/mujoco_polishing_sim/polish_result.png)
 
-运行脚本后可将新生成的 `polish_result.png` 与仓库中的 `polish_result_reference.png` 对照，检查轨迹覆盖、法向力跟踪、快速/慢速滤波信号和安全状态。
-
-## 推荐阅读顺序
-
-1. 先读本 README，建立系统和目录的整体认识。
-2. 阅读 [`README_polish.md`](scripts/mujoco/mujoco_polishing_sim/README_polish.md)，跑通最小仿真。
-3. 阅读 [`mujoco_polishing_textbook.md`](notes/mujoco_polishing_textbook.md) 的“读者假设与范围”和“大地图”。
-4. 对照 [`polish_impedance_control.py`](scripts/mujoco/mujoco_polishing_sim/polish_impedance_control.py)，依次跟踪轨迹生成、点云法线估计、混合控制和安全状态机。
+上图由当前控制脚本实际运行生成，展示接触力跟踪、末端高度、工件表面轨迹、稳态力分布、合力安全通道和逐行跟踪误差。
 
 ## 模型来源与限制
 

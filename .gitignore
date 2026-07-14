@@ -41,3 +41,19 @@ files.zip
 # --- Personal notes stay local. Only the public textbook is versioned. ---
 notes/*
 !notes/mujoco_polishing_textbook.md
+!notes/img/
+notes/img/*
+!notes/img/hybrid_control_closed_loop.svg
+!notes/img/perception_pipeline_diagram.svg
+!notes/img/normal_force_loop_diagram.svg
+!notes/img/tangential_impedance_loop_diagram.svg
+!notes/img/tangent_arc_geometry.png
+!notes/img/spring_damper.svg
+!notes/img/impedance_step_response.png
+!notes/img/tangent_normal_comparison.png
+!notes/img/pointcloud_normal_validation.png
+!notes/img/gain_retuning_comparison.png
+!notes/img/three_layer_dataflow.svg
+!notes/img/polishing_control_loop.svg
+!notes/img/lowpass_filter_demo.png
+!notes/img/raster_scan_pattern.png

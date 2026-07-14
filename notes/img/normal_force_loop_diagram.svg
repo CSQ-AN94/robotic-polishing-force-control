@@ -1,0 +1,61 @@
+<svg width="100%" viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>法向力控制回路，含公式与感知输入</title>
+<desc>目标力经求和点与慢滤波后的实际法向力比较得到误差，PI 加阻尼控制器算出法向力命令，结合局部法线方向，经雅可比转置映射到关节力矩，作用在机器人与接触动力学上。实线是正常力反馈回路；虚线安全通道读取快速滤波力，在持续过力时覆盖正常控制并进入撤离锁定，但不回到误差求和点。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<style>
+text { font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; }
+.t{font-size:14px;fill:#1a1a1a;}
+.ts{font-size:12.5px;fill:#444;}
+.th{font-size:14px;font-weight:600;fill:#1a1a1a;}
+.box{fill:#f7f7f7;stroke:#999;stroke-width:0.75;}
+.saf{fill:#fdf3e7;stroke:#d98a1a;stroke-width:0.75;}
+.arr{stroke:#888;stroke-width:1.5;fill:none;}
+.arrsaf{stroke:#d98a1a;stroke-width:1.5;stroke-dasharray:5 4;fill:none;}
+.sub{baseline-shift:sub;font-size:9px;}
+</style>
+
+<text class="ts" x="18" y="94">F<tspan class="sub">target</tspan>(s)</text>
+<line x1="90" y1="90" x2="128" y2="90" class="arr" marker-end="url(#arrow)"/>
+
+<circle cx="144" cy="90" r="16" class="box"/>
+<text class="th" x="144" y="90" text-anchor="middle" dominant-baseline="central">Σ</text>
+<text class="ts" x="115" y="70">+</text>
+<text class="ts" x="144" y="132" text-anchor="middle">−</text>
+
+<line x1="160" y1="90" x2="180" y2="90" class="arr" marker-end="url(#arrow)"/>
+
+<rect x="180" y="50" width="220" height="80" rx="6" class="box"/>
+<text class="th" x="290" y="70" text-anchor="middle" dominant-baseline="central">力控制器(法向)</text>
+<text class="ts" x="290" y="92" text-anchor="middle" dominant-baseline="central">e = f<tspan class="sub">target</tspan> − f<tspan class="sub">filt</tspan></text>
+<text class="ts" x="290" y="114" text-anchor="middle" dominant-baseline="central">F<tspan class="sub">n</tspan> = −(K<tspan class="sub">p</tspan>e + K<tspan class="sub">i</tspan>∫e dt) − B<tspan class="sub">z</tspan>v<tspan class="sub">n</tspan></text>
+
+<line x1="400" y1="90" x2="430" y2="90" class="arr" marker-end="url(#arrow)"/>
+<text class="ts" x="415" y="42" text-anchor="middle">n̂(x)→</text>
+
+<rect x="430" y="62" width="170" height="56" rx="6" class="box"/>
+<text class="th" x="515" y="80" text-anchor="middle" dominant-baseline="central">机器人动力学</text>
+<text class="ts" x="515" y="102" text-anchor="middle" dominant-baseline="central">J<tspan baseline-shift="super" font-size="9">⊤</tspan>映射 + 接触</text>
+
+<line x1="600" y1="90" x2="617" y2="90" class="arr" marker-end="url(#arrow)"/>
+<circle cx="620" cy="90" r="3" fill="#888"/>
+<text class="ts" x="627" y="94">f<tspan class="sub">n</tspan>(s)</text>
+
+<!-- feedback A: low-pass filter -->
+<path d="M620,90 L620,175 L462,175" class="arr" marker-end="url(#arrow)"/>
+<rect x="330" y="157" width="132" height="36" rx="6" class="box"/>
+<text class="th" x="396" y="175" text-anchor="middle" dominant-baseline="central">低通滤波 H(s)</text>
+<path d="M330,175 L136,175 L136,107" class="arr" marker-end="url(#arrow)"/>
+
+<!-- independent safety supervisor: it overrides the controller, not the sum node -->
+<path d="M640,90 L640,260 L474,260" class="arrsaf" marker-end="url(#arrow)"/>
+<rect x="255" y="228" width="219" height="64" rx="6" class="saf"/>
+<text class="th" x="364" y="246" text-anchor="middle" dominant-baseline="central">安全监控</text>
+<text class="ts" x="364" y="266" text-anchor="middle" dominant-baseline="central">|f<tspan class="sub">fast</tspan>| &gt; 10N, Δt &gt; 25ms</text>
+<text class="ts" x="364" y="284" text-anchor="middle" dominant-baseline="central">锁存，不自动恢复</text>
+<path d="M255,260 L210,260 L210,130" class="arrsaf" marker-end="url(#arrow)"/>
+<text class="ts" x="218" y="216">trip：覆盖正常输出</text>
+</svg>
